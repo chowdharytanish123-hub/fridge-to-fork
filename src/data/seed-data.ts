@@ -1,84 +1,63 @@
-import { calculateRecipeNutrition, type NutritionValue } from './nutrition';
-import { canonicalIngredientName } from './ingredient-normalization';
+import { lookupCanonicalIngredient } from './ingredient-catalog';
 
-export type InventoryItem = {
-  ingredient: string;
-  quantity: number;
-  unit: 'g' | 'kg' | 'ml' | 'pcs';
-  expiryDate?: string;
-};
-
-export type Recipe = {
+export type RecipeDraft = {
   id: string;
   name: string;
+  alternateNames?: string[];
   cuisine: string;
   mealType: string;
-  ingredients: Array<{ name: string; quantity: number; unit: 'g' | 'kg' | 'ml' | 'pcs' }>;
-  tags?: string[];
+  dietType: string;
+  ingredients: Array<{
+    name: string;
+    quantity: number;
+    unit: 'g' | 'kg' | 'ml' | 'pcs';
+  }>;
   prepTimeMin: number;
   cookTimeMin: number;
+  servings: number;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
 };
 
-export function buildInventoryIndex(items: InventoryItem[]) {
-  return new Map(items.map((item) => [canonicalIngredientName(item.ingredient), item]));
-}
+export function validateRecipeDraft(recipe: RecipeDraft) {
+  if (!recipe.name || recipe.name.length < 3) {
+    throw new Error('Recipe name must be at least 3 characters long.');
+  }
 
-export function getMissingIngredients(recipe: Recipe, inventory: InventoryItem[]) {
-  const inventoryMap = buildInventoryIndex(inventory);
-
-  return recipe.ingredients.filter((ingredient) => {
-    const canonical = canonicalIngredientName(ingredient.name);
-    return !inventoryMap.has(canonical);
-  });
-}
-
-export function scoreRecipe(recipe: Recipe, inventory: InventoryItem[]) {
-  const inventoryMap = buildInventoryIndex(inventory);
-  let matchedCount = 0;
-  let missingCount = 0;
+  if (!Array.isArray(recipe.ingredients) || recipe.ingredients.length === 0) {
+    throw new Error('Recipe must include at least one ingredient.');
+  }
 
   for (const ingredient of recipe.ingredients) {
-    const canonical = canonicalIngredientName(ingredient.name);
-    if (inventoryMap.has(canonical)) {
-      matchedCount += 1;
-    } else {
-      missingCount += 1;
+    if (!ingredient.name || ingredient.quantity <= 0) {
+      throw new Error(`Ingredient ${ingredient.name || 'unknown'} is invalid.`);
+    }
+    ingredient.name = lookupCanonicalIngredient(ingredient.name);
+  }
+
+  return recipe;
+}
+
+export function deduplicateRecipeIngredients(recipes: RecipeDraft[]) {
+  const map = new Map<string, RecipeDraft>();
+
+  for (const recipe of recipes) {
+    const key = recipe.name.trim().toLowerCase();
+    if (!map.has(key)) {
+      map.set(key, recipe);
     }
   }
 
-  const nutrition = calculateRecipeNutrition(
-    recipe.ingredients.map((ingredient) => ({
-      ingredient: ingredient.name,
-      quantity: ingredient.quantity,
-      unit: ingredient.unit,
+  return [...map.values()];
+}
+
+export function normalizeRecipeDraft(recipe: RecipeDraft) {
+  return {
+    ...recipe,
+    name: recipe.name.trim(),
+    alternateNames: (recipe.alternateNames ?? []).map((name) => name.trim()),
+    ingredients: recipe.ingredients.map((ingredient) => ({
+      ...ingredient,
+      name: lookupCanonicalIngredient(ingredient.name),
     })),
-  );
-
-  const score = matchedCount * 25 - missingCount * 15 + nutrition.protein * 3 - recipe.prepTimeMin * 0.1;
-
-  return {
-    score: Number(score.toFixed(1)),
-    matchedCount,
-    missingCount,
-    nutrition,
-  };
-}
-
-export function rankRecipes(recipes: Recipe[], inventory: InventoryItem[]) {
-  return recipes
-    .map((recipe) => ({ recipe, ...scoreRecipe(recipe, inventory) }))
-    .sort((a, b) => b.score - a.score);
-}
-
-export function explainRecipe(recipe: Recipe, inventory: InventoryItem[]) {
-  const missing = getMissingIngredients(recipe, inventory);
-  const available = recipe.ingredients.filter((ingredient) => {
-    return buildInventoryIndex(inventory).has(canonicalIngredientName(ingredient.name));
-  });
-
-  return {
-    summary: `You already have ${available.length} of ${recipe.ingredients.length} ingredients needed.`,
-    missing: missing.map((item) => item.name),
-    reason: missing.length <= 2 ? 'This recipe fits your current kitchen inventory and would be quick to cook.' : 'This recipe is a strong match but needs a few extra items from your shopping list.',
   };
 }
