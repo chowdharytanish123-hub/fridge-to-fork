@@ -1,2 +1,18 @@
-# fridge-to-fork
-Built an AI-powered meal planning app using React Native and Expo. Features include camera-based ingredient scanning, AI recipe recommendations, meal planning, and shopping list generation. Integrated OpenAI Vision APIs, Supabase authentication, and Spoonacular APIs.
+import { describe, expect, it } from 'vitest';
+import { rankRecipes } from '../src/lib/recommendation';
+import { recipeSeed } from '../src/data/seed-data';
+
+describe('recommendation engine', () => {
+  it('ranks recipes by available ingredients', () => {
+    const inventory = [
+      { ingredient: 'spinach', quantity: 200, unit: 'g' },
+      { ingredient: 'paneer', quantity: 150, unit: 'g' },
+      { ingredient: 'onion', quantity: 80, unit: 'g' },
+      { ingredient: 'tomato', quantity: 80, unit: 'g' },
+    ];
+
+    const ranked = rankRecipes(recipeSeed, inventory);
+    expect(ranked[0].recipe.name).toContain('Spinach');
+    expect(ranked[0].score).toBeGreaterThan(0);
+  });
+});

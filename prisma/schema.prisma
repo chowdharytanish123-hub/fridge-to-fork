@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  profile       Profile?
+  inventory     InventoryItem[]
+  recipesSaved  SavedRecipe[]
+  mealPlans     MealPlan[]
+  mealHistory   MealHistory[]
+  shoppingLists ShoppingList[]
+  preferences   UserPreference?
+  scanResults   ScanResult[]
+  corrections   AICorrection[]
+  expiryRecords ExpiryRecord[]
+  ratings       Rating[]
+}
+
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  age             Int?
+  sex             String?
+  heightCm        Int?
+  weightKg        Float?
+  activityLevel   String?
+  fitnessGoal     String?
+  calorieTarget   Int?
+  proteinTarget   Float?
+  dietaryPref     String?
+  allergies       String[]
+  dislikedFoods   String[]
+  preferredCuisines String[]
+  cookingSkill    String?
+  availableTimeMin Int?
+  householdSize   Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+model Ingredient {
+  id             String          @id @default(cuid())
+  canonicalName  String          @unique
+  displayName    String
+  category       String?
+  cuisine        String?
+  defaultUnit    String?
+  aliases        IngredientAlias[]
+  nutrition      NutritionRecord[]
+  fdcMappings    FoodDataMapping[]
+}
+
+model IngredientAlias {
+  id          String     @id @default(cuid())
+  ingredientId String    @unique
+  alias       String
+  normalized  String
+  ingredient  Ingredient @relation(fields: [ingredientId], references: [id])
+}
+
+model InventoryItem {
+  id               String    @id @default(cuid())
+  userId           String
+  ingredient       String
+  quantity         Float
+  unit             String
+  purchaseDate     DateTime?
+  expiryDate       DateTime?
+  opened           Boolean   @default(false)
+  storageLocation  String?
+  confidenceScore  Float?
+  source           String?
+  verified         Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id])
+}
+
+model Recipe {
+  id                String           @id @default(cuid())
+  slug              String           @unique
+  name              String
+  alternateNames    String[]
+  cuisine           String
+  mealType          String
+  dietType          String
+  difficulty        String
+  prepTimeMin       Int
+  cookTimeMin       Int
+  totalTimeMin      Int
+  servings          Int
+  spiceLevel        String?
+  proteinCategory   String?
+  calorieCategory   String?
+  imageUrl          String?
+  description       String?
+  ingredients       RecipeIngredient[]
+  nutrition         NutritionRecord[]
+  ratings           Rating[]
+  savedBy           SavedRecipe[]
+  mealPlans         MealPlan[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+model RecipeIngredient {
+  id           String  @id @default(cuid())
+  recipeId     String
+  ingredient   String
+  quantity     Float
+  unit         String
+  isCore       Boolean @default(false)
+  recipe       Recipe  @relation(fields: [recipeId], references: [id])
+}
+
+model NutritionRecord {
+  id                String      @id @default(cuid())
+  ingredientId      String?
+  recipeId          String?
+  ingredientName    String
+  caloriesPer100g   Float?
+  proteinPer100g    Float?
+  carbsPer100g      Float?
+  fatPer100g        Float?
+  fibrePer100g      Float?
+  sugarPer100g      Float?
+  sodiumPer100g     Float?
+  state             String?
+  source            String?
+  ingredient        Ingredient? @relation(fields: [ingredientId], references: [id])
+  recipe            Recipe?     @relation(fields: [recipeId], references: [id])
+}
+
+model FoodDataMapping {
+  id              String      @id @default(cuid())
+  ingredientId    String
+  fdcId           String
+  foodName        String
+  source          String
+  ingredient      Ingredient @relation(fields: [ingredientId], references: [id])
+}
+
+model MealPlan {
+  id          String   @id @default(cuid())
+  userId      String
+  recipeId    String
+  dayOfWeek   String
+  mealType    String
+  notes       String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  recipe      Recipe   @relation(fields: [recipeId], references: [id])
+}
+
+model MealHistory {
+  id              String   @id @default(cuid())
+  userId          String
+  recipeId        String?
+  recipeName      String
+  ingredientsUsed String[]
+  calories       Float?
+  protein        Float?
+  otherNutrition  Json?
+  userRating     Int?
+  prepTimeMin    Int?
+  cookedAt        DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+model ShoppingList {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  quantity     Float?
+  unit         String?
+  isChecked    Boolean @default(false)
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model UserPreference {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  preferredCuisine  String[]
+  dislikedFoods     String[]
+  dietaryPreference String?
+  cookingTimeMin    Int?
+  calorieTarget     Int?
+  proteinTarget     Float?
+  user              User     @relation(fields: [userId], references: [id])
+}
+
+model ScanResult {
+  id               String   @id @default(cuid())
+  userId           String
+  imageUrl         String?
+  detectedItems    Json
+  confidence       Json
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id])
+}
+
+model AICorrection {
+  id          String   @id @default(cuid())
+  userId      String
+  ingredient  String
+  correctedTo String
+  reason      String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model ExpiryRecord {
+  id          String   @id @default(cuid())
+  userId      String
+  ingredient  String
+  expiryDate  DateTime
+  status      String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model SavedRecipe {
+  id        String   @id @default(cuid())
+  userId    String
+  recipeId  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  recipe    Recipe   @relation(fields: [recipeId], references: [id])
+}
+
+model Rating {
+  id          String   @id @default(cuid())
+  userId      String
+  recipeId    String
+  score       Int
+  comment     String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  recipe      Recipe   @relation(fields: [recipeId], references: [id])
+}

@@ -1,0 +1,55 @@
+import type { Recipe } from '@/lib/recommendation';
+
+export const recipeSeed: Recipe[] = [
+  {
+    id: 'spinach-paneer-bhurji',
+    name: 'Spinach Paneer Bhurji',
+    cuisine: 'North Indian',
+    mealType: 'Dinner',
+    prepTimeMin: 10,
+    cookTimeMin: 15,
+    ingredients: [
+      { name: 'spinach', quantity: 200, unit: 'g' },
+      { name: 'paneer', quantity: 150, unit: 'g' },
+      { name: 'onion', quantity: 60, unit: 'g' },
+      { name: 'tomato', quantity: 80, unit: 'g' },
+      { name: 'garlic', quantity: 10, unit: 'g' },
+      { name: 'greenchilli', quantity: 10, unit: 'g' },
+    ],
+    tags: ['vegetarian', 'high-protein'],
+  },
+  {
+    id: 'moong-dal-tadka',
+    name: 'Moong Dal Tadka',
+    cuisine: 'Indian',
+    mealType: 'Lunch',
+    prepTimeMin: 10,
+    cookTimeMin: 25,
+    ingredients: [
+      { name: 'moongdal', quantity: 180, unit: 'g' },
+      { name: 'tomato', quantity: 120, unit: 'g' },
+      { name: 'onion', quantity: 70, unit: 'g' },
+      { name: 'garlic', quantity: 15, unit: 'g' },
+      { name: 'ginger', quantity: 10, unit: 'g' },
+      { name: 'spinach', quantity: 100, unit: 'g' },
+    ],
+    tags: ['vegetarian', 'protein'],
+  },
+  {
+    id: 'veg-biryani',
+    name: 'Vegetable Biryani',
+    cuisine: 'Hyderabadi',
+    mealType: 'Dinner',
+    prepTimeMin: 20,
+    cookTimeMin: 35,
+    ingredients: [
+      { name: 'rice', quantity: 250, unit: 'g' },
+      { name: 'onion', quantity: 100, unit: 'g' },
+      { name: 'tomato', quantity: 120, unit: 'g' },
+      { name: 'peas', quantity: 80, unit: 'g' },
+      { name: 'potato', quantity: 150, unit: 'g' },
+      { name: 'greenchilli', quantity: 20, unit: 'g' },
+    ],
+    tags: ['vegetarian', 'family-meal'],
+  },
+];
